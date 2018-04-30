@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="margin_8">8dp</dimen>
+    <dimen name="margin_16">16dp</dimen>
+
+    <dimen name="button_size">56dp</dimen>
+    <dimen name="battery_size">80dp</dimen>
+    <dimen name="app_name_height">30dp</dimen>
+
+    <dimen name="text_clock_text_size">24sp</dimen>
+    <dimen name="battery_text_size">12sp</dimen>
+    <dimen name="app_name_text_size">10sp</dimen>
+</resources>

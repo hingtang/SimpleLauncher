@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">SimpleLauncher</string>
+
+    <string name="navigate_to_simple_launcher">Navigate to Simple Launcher</string>
+
+    <string name="activity_not_found_message">Sorry, this application not found.</string>
+</resources>
