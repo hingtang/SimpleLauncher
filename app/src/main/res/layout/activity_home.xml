@@ -7,9 +7,11 @@
     tools:context=".activities.HomeActivity">
 
     <RelativeLayout
+        android:id="@+id/relativeLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/margin_16">
+        android:layout_margin="@dimen/margin_16"
+        tools:layout_editor_absoluteX="16dp">
 
         <TextClock
             android:id="@+id/textClock"
@@ -31,6 +33,15 @@
             android:layout_marginLeft="@dimen/margin_8" />
 
     </RelativeLayout>
+
+    <com.hing.simplelauncher.customViews.CustomCountryView
+        android:id="@+id/customCountryView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_16"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/relativeLayout" />
 
     <Button
         style="@style/Widget.AppCompat.Button.Colored"

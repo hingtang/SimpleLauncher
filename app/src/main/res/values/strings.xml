@@ -4,4 +4,15 @@
     <string name="navigate_to_simple_launcher">Navigate to Simple Launcher</string>
 
     <string name="activity_not_found_message">Sorry, this application not found.</string>
+    <string name="message_access_permission">These permissions are mandatory for the application. Please allow access.</string>
+    <string name="title_gps_not_enable">GPS is not Enabled!</string>
+    <string name="message_turn_on_gps">Do you want to turn on GPS?</string>
+    <string name="message_yes">YES</string>
+    <string name="message_no">NO</string>
+    <string name="message_ok">OK</string>
+    <string name="message_cancel">CANCEL</string>
+
+    <string name="label_country_name">Country name: </string>
+    <string name="label_capital">Capital: </string>
+    <string name="label_currency">Currency: </string>
 </resources>
