@@ -1,14 +1,12 @@
 package com.hing.simplelauncher.activities;
 
-import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -40,7 +38,7 @@ public class SimpleLauncherActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
 
         initAppLauncherGridView();
-        new LoadApplicatins().execute();
+        new LoadApplications().execute();
     }
 
     private void initAppLauncherGridView(){
@@ -81,7 +79,7 @@ public class SimpleLauncherActivity extends AppCompatActivity {
         return result;
     }
 
-    private class LoadApplicatins extends AsyncTask<Void, Void, Void>{
+    private class LoadApplications extends AsyncTask<Void, Void, Void>{
         @Override
         protected void onPreExecute() {
             progressBar.setVisibility(View.VISIBLE);

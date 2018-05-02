@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -17,7 +16,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -27,11 +25,13 @@ import com.google.gson.GsonBuilder;
 import com.hing.simplelauncher.R;
 import com.hing.simplelauncher.customViews.CustomBatteryView;
 import com.hing.simplelauncher.customViews.CustomCountryView;
+import com.hing.simplelauncher.interfaces.ILocationUpdateListener;
 import com.hing.simplelauncher.pojo.Country;
 import com.hing.simplelauncher.servers.CountryAPI;
 import com.hing.simplelauncher.utils.AlertHelper;
 import com.hing.simplelauncher.utils.Constants;
 import com.hing.simplelauncher.utils.LocationHelper;
+import com.hing.simplelauncher.utils.PermissionHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,23 +41,21 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class HomeActivity extends AppCompatActivity implements LocationListener, retrofit2.Callback<List<Country>> {
+public class HomeActivity extends AppCompatActivity implements ILocationUpdateListener, LocationListener, retrofit2.Callback<List<Country>> {
     private final static String TAG = "HomeActivity";
     private final static int ALL_PERMISSIONS_RESULT = 101;
-    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
-    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1;
     private CustomBatteryView customBatteryView;
     private CustomCountryView customCountryView;
 
     private BroadcastReceiver batteryInfoReceiver;
     private LocationManager locationManager;
-    private Location location;
     private ArrayList<String> permissionList = new ArrayList<>();
     private ArrayList<String> permissionListToRequest;
     private ArrayList<String> permissionsRejected = new ArrayList<>();
     private boolean isGPS = false;
     private boolean isNetwork = false;
     private boolean canGetLocation = true;
+    private boolean isGettingLocation = false;
 
     private Retrofit retrofit;
     private Gson gson;
@@ -130,7 +128,7 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
 
         permissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
         permissionList.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        permissionListToRequest = findUnAskedPermissions(permissionList);
+        permissionListToRequest = PermissionHelper.findUnAskedPermissions(this, permissionList);
 
         if (!isGPS && !isNetwork) {
             AlertDialog alert = AlertHelper.createAlert(this, getString(R.string.title_gps_not_enable), getString(R.string.message_turn_on_gps),
@@ -147,7 +145,6 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
                         }
                     });
             alert.show();
-            location = LocationHelper.getLastLocation(locationManager);
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (permissionListToRequest.size() > 0) {
@@ -155,68 +152,19 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
                     canGetLocation = false;
                 }
             }
-            getLocation();
+            LocationHelper.getLocation(canGetLocation, locationManager, this, this);
         }
     }
 
-    private void getLocation() {
-        try {
-            if (canGetLocation) {
-                if (isGPS) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                            MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-                    if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        if (location != null) {
-                            updateUI(location);
-                        }
-                    }
-                } else if (isNetwork) {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                            MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-                    if (locationManager != null) {
-                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                        if (location != null) {
-                            updateUI(location);
-                        }
-                    }
-                } else {
-                    location.setLatitude(0);
-                    location.setLongitude(0);
-                    updateUI(location);
-                }
-            } else {
-                Log.e(TAG, " Can't get location");
-            }
-        } catch (SecurityException e) {
-            e.printStackTrace();
+    private void updateLocationUI(Location location) {
+        if (!isGettingLocation) {
+            isGettingLocation = true;
+            String countryName = LocationHelper.getCountryName(this, location.getLatitude(), location.getLongitude());
+            customCountryView.setCountryName(countryName);
+            String englishCountryName = LocationHelper.getEnglishCountryName(this, location.getLatitude(), location.getLongitude());
+            Call<List<Country>> call = getCountryApi().getCountryInfo(englishCountryName);
+            call.enqueue(this);
         }
-    }
-
-    private ArrayList findUnAskedPermissions(ArrayList<String> permissionList) {
-        ArrayList result = new ArrayList();
-        for (String permission : permissionList) {
-            if (!hasPermission(permission)) {
-                result.add(permission);
-            }
-        }
-        return result;
-    }
-
-    private boolean hasPermission(String permission) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED);
-        }
-        return true;
-    }
-
-    private void updateUI(Location location) {
-        String countryName = LocationHelper.getCountryName(this, location.getLatitude(), location.getLongitude());
-        customCountryView.setCountryName(countryName);
-        String englishCountryName = LocationHelper.getEnglishCountryName(this, location.getLatitude(), location.getLongitude());
-        Log.e(TAG, "country: " + englishCountryName);
-        Call<List<Country>> call = getCountryApi().getCountryInfo(englishCountryName);
-        call.enqueue(this);
     }
 
     public void onNavigateToSimpleLauncherClick(View view) {
@@ -226,7 +174,7 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onLocationChanged(Location location) {
-        updateUI(location);
+        updateLocationUI(location);
     }
 
     @Override
@@ -236,7 +184,7 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onProviderEnabled(String s) {
-        getLocation();
+        LocationHelper.getLocation(canGetLocation, locationManager, this, this);
     }
 
     @Override
@@ -251,7 +199,7 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
         switch (requestCode) {
             case ALL_PERMISSIONS_RESULT:
                 for (String permission : permissionListToRequest) {
-                    if (!hasPermission(permission)) {
+                    if (!PermissionHelper.hasPermission(getApplicationContext(), permission)) {
                         permissionsRejected.add(permission);
                     }
                 }
@@ -273,7 +221,7 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
                     } else {
                         Log.d(TAG, "No rejected permissions.");
                         canGetLocation = true;
-                        getLocation();
+                        LocationHelper.getLocation(canGetLocation, locationManager, this, this);
                     }
                 }
                 break;
@@ -285,21 +233,31 @@ public class HomeActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onResponse(Call<List<Country>> call, Response<List<Country>> response) {
+        isGettingLocation = false;
         if (response.isSuccessful()) {
             for (int i = 0; i < response.body().size(); i++) {
                 Country country = response.body().get(i);
                 if (!country.getCountryName().isEmpty() && !country.getCapital().isEmpty() && country.getCurrencyList().size() > 0) {
                     customCountryView.setCountry(country);
+                    customCountryView.setVisibility(View.VISIBLE);
                     break;
                 }
             }
         } else {
+            customCountryView.setVisibility(View.GONE);
             Log.e(TAG, "error: " + response.errorBody());
         }
     }
 
     @Override
     public void onFailure(Call<List<Country>> call, Throwable t) {
+        isGettingLocation = false;
+        customCountryView.setVisibility(View.GONE);
         Log.e(TAG, "failure: " + t.getMessage());
+    }
+
+    @Override
+    public void getLoation(Location location) {
+        updateLocationUI(location);
     }
 }
